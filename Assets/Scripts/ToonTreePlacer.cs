@@ -126,7 +126,7 @@ public class ToonTreePlacer : MonoBehaviour
             {
                 Debug.LogWarning($"ToonTreePlacer: errore lettura metadata: {e.Message}");
             }
-        }
+        } // fine if File.Exists
 
         // Fallback: stima dal terreno
         var world = GameObject.Find("CityBuilder_World");
@@ -143,7 +143,7 @@ public class ToonTreePlacer : MonoBehaviour
                 Debug.Log($"ToonTreePlacer: seaLevelNorm={seaLevelNorm:F4} (stimato da terreno)");
             }
         }
-    }
+    } // fine AutoDetectSeaLevel
 
     void Start()
     {
