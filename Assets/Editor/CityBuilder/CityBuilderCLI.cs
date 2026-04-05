@@ -127,8 +127,10 @@ namespace CityBuilder
             if (!string.IsNullOrEmpty(step))
             {
                 // Step singolo: ricostruisci stato dalla scena salvata
+                int userGrid = pipeline.gridCount; // preserva il valore utente
                 Debug.Log($"Step singolo: {step} — ripristino stato dalla scena...");
                 pipeline.RestoreFromScene();
+                pipeline.gridCount = userGrid; // RestoreFromScene potrebbe averlo sovrascritto
 
                 // Per step che richiedono OSM, caricalo dalla cache
                 if (step != "terrain" && step != "terreno" && step != "textures" && step != "texture" && step != "scene" && step != "scena")
