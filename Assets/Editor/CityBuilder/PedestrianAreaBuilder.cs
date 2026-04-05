@@ -292,16 +292,7 @@ namespace CityBuilder
         //  MATERIALI - Stile piazza italiana
         // ================================================================
 
-        private static Shader FindShader()
-        {
-            Shader s = Shader.Find("Universal Render Pipeline/Lit");
-            if (s != null) return s;
-            s = Shader.Find("HDRP/Lit");
-            if (s != null) return s;
-            s = Shader.Find("Standard");
-            if (s != null) return s;
-            return Shader.Find("Unlit/Color");
-        }
+
 
         /// <summary>
         /// Sampietrini / lastricato: grigio caldo con leggera texture.
@@ -309,7 +300,7 @@ namespace CityBuilder
         /// </summary>
         private static Material CreatePavingMaterial()
         {
-            Material mat = new Material(FindShader());
+            Material mat = new Material(MeshUtils.FindLitShader());
             // Porfido romano: grigio con sfumatura calda
             mat.color = new Color(0.45f, 0.40f, 0.38f);
             if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.15f);
@@ -324,7 +315,7 @@ namespace CityBuilder
         /// </summary>
         private static Material CreateBorderMaterial()
         {
-            Material mat = new Material(FindShader());
+            Material mat = new Material(MeshUtils.FindLitShader());
             mat.color = new Color(0.65f, 0.62f, 0.58f);
             if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.05f);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.05f);
@@ -338,7 +329,7 @@ namespace CityBuilder
         /// </summary>
         private static Material CreateAccentMaterial()
         {
-            Material mat = new Material(FindShader());
+            Material mat = new Material(MeshUtils.FindLitShader());
             mat.color = new Color(0.72f, 0.68f, 0.62f);
             if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.25f);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.25f);

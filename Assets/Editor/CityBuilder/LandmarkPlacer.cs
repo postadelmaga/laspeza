@@ -123,16 +123,9 @@ namespace CityBuilder
         //  BUILDERS — mesh procedurali per ogni landmark
         // ================================================================
 
-        static Shader FindShader()
-        {
-            return Shader.Find("Universal Render Pipeline/Lit")
-                ?? Shader.Find("Standard")
-                ?? Shader.Find("Unlit/Color");
-        }
-
         static Material MakeMat(Color c, float smooth = 0.2f)
         {
-            var mat = new Material(FindShader()) { color = c };
+            var mat = new Material(MeshUtils.FindLitShader()) { color = c };
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smooth);
             if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0f);
             return mat;

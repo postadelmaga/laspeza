@@ -81,20 +81,9 @@ namespace CityBuilder
         /// <summary>
         /// Trova uno shader funzionante per il render pipeline corrente.
         /// </summary>
-        private static Shader FindCompatibleShader()
-        {
-            Shader s = Shader.Find("Universal Render Pipeline/Lit");
-            if (s != null) return s;
-            s = Shader.Find("HDRP/Lit");
-            if (s != null) return s;
-            s = Shader.Find("Standard");
-            if (s != null) return s;
-            return Shader.Find("Unlit/Color");
-        }
-
         private static Material CreateMaterial(Color color, float smoothness = 0.2f)
         {
-            Material mat = new Material(FindCompatibleShader()) { color = color };
+            Material mat = new Material(MeshUtils.FindLitShader()) { color = color };
             if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", smoothness);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);
             return mat;

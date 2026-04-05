@@ -431,20 +431,9 @@ namespace CityBuilder
         //  MATERIALS
         // ================================================================
 
-        private static Shader FindCompatibleShader()
-        {
-            Shader s = Shader.Find("Universal Render Pipeline/Lit");
-            if (s != null) return s;
-            s = Shader.Find("HDRP/Lit");
-            if (s != null) return s;
-            s = Shader.Find("Standard");
-            if (s != null) return s;
-            return Shader.Find("Unlit/Color");
-        }
-
         private static Material CreateAsphaltMaterial()
         {
-            Shader shader = FindCompatibleShader();
+            Shader shader = MeshUtils.FindLitShader();
             Material mat = new Material(shader);
             // Asfalto scuro realistico con leggera tonalita' calda (usura)
             mat.color = new Color(0.18f, 0.17f, 0.16f);
@@ -461,7 +450,7 @@ namespace CityBuilder
 
         private static Material CreateSidewalkMaterial()
         {
-            Shader shader = FindCompatibleShader();
+            Shader shader = MeshUtils.FindLitShader();
             Material mat = new Material(shader);
             // Marciapiede beige/grigio caldo — tipico cemento italiano invecchiato
             mat.color = new Color(0.58f, 0.54f, 0.50f);
@@ -474,7 +463,7 @@ namespace CityBuilder
 
         private static Material CreateMarkingMaterial()
         {
-            Shader shader = FindCompatibleShader();
+            Shader shader = MeshUtils.FindLitShader();
             Material mat = new Material(shader);
             // Segnaletica orizzontale: bianco leggermente consumato
             mat.color = new Color(0.92f, 0.90f, 0.86f);

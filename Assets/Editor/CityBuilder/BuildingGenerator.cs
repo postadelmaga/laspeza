@@ -60,24 +60,9 @@ namespace CityBuilder
         private static readonly Color WINDOW_COLOR    = new Color(0.22f, 0.28f, 0.35f);
 
         // ── Shader helper (mirrors ProceduralBuilder) ──────────────────────
-        private static Shader FindCompatibleShader()
-        {
-            Shader s = Shader.Find("Universal Render Pipeline/Lit");
-            if (s != null) return s;
-            s = Shader.Find("HDRP/Lit");
-            if (s != null) return s;
-            s = Shader.Find("Standard");
-            if (s != null) return s;
-            return Shader.Find("Unlit/Color");
-        }
-
         private static Material CreateMaterial(Color color, float smoothness = 0.3f, float metallic = 0f)
         {
-            Material mat = new Material(FindCompatibleShader()) { color = color };
-            if (mat.HasProperty("_Glossiness"))  mat.SetFloat("_Glossiness", smoothness);
-            if (mat.HasProperty("_Smoothness"))  mat.SetFloat("_Smoothness", smoothness);
-            if (mat.HasProperty("_Metallic"))    mat.SetFloat("_Metallic", metallic);
-            return mat;
+            return MeshUtils.CreateMaterial(color, smoothness, metallic);
         }
 
         // ── Public entry point ─────────────────────────────────────────────
