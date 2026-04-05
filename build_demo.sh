@@ -41,7 +41,7 @@ BUILD_ONLY=false
 GEN_ONLY=false
 RUN_AFTER=false
 TIF="$DEFAULT_TIF"
-GRID=1
+GRID=2
 
 # Parse args
 while [[ $# -gt 0 ]]; do
