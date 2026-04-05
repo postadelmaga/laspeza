@@ -1,8 +1,7 @@
 Shader "Custom/ToonWater"
 {
-    // BotW-style water with REAL DEPTH from camera depth texture.
-    // Shallow = turchese, Deep = blu scuro, Shore = schiuma bianca.
-    // Opaque for performance, depth-based color blending.
+    // BotW-style toon water. Opaque, no depth texture dependency.
+    // Color varies with wave height + view angle + noise for depth illusion.
     Properties
     {
         _ShallowColor ("Shallow Color", Color) = (0.15, 0.78, 0.82, 1)
@@ -10,11 +9,6 @@ Shader "Custom/ToonWater"
         _FoamColor ("Foam Color", Color) = (0.92, 0.97, 1.00, 1)
         _HorizonColor ("Horizon Color", Color) = (0.45, 0.70, 0.95, 1)
         _ShadowColor ("Shadow Tint", Color) = (0.08, 0.06, 0.30, 1)
-
-        [Header(Depth)]
-        _ShallowDepth ("Shallow Depth (m)", Float) = 3.0
-        _DeepDepth ("Deep Depth (m)", Float) = 25.0
-        _ShoreWidth ("Shore Foam Width (m)", Float) = 2.0
 
         [Header(Waves)]
         _WaveSpeed ("Wave Speed", Float) = 1.0
@@ -44,7 +38,6 @@ Shader "Custom/ToonWater"
 
     SubShader
     {
-        // Opaque, rendered right after terrain geometry
         Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" "Queue"="Geometry+10" }
         LOD 200
 
@@ -62,14 +55,10 @@ Shader "Custom/ToonWater"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            // Depth texture per profondita' acqua
-            TEXTURE2D_X_FLOAT(_CameraDepthTexture);
-            SAMPLER(sampler_CameraDepthTexture);
 
             struct Attributes
             {
                 float4 posOS : POSITION;
-                float2 uv    : TEXCOORD0;
             };
 
             struct Varyings
@@ -79,37 +68,27 @@ Shader "Custom/ToonWater"
                 float3 normalWS : TEXCOORD1;
                 float  fogCoord : TEXCOORD2;
                 float  waveH    : TEXCOORD3;
-                float4 screenPos : TEXCOORD4;
             };
 
             CBUFFER_START(UnityPerMaterial)
-                float4 _ShallowColor;
-                float4 _DeepColor;
-                float4 _FoamColor;
-                float4 _HorizonColor;
-                float4 _ShadowColor;
-                float  _ShallowDepth, _DeepDepth, _ShoreWidth;
+                float4 _ShallowColor, _DeepColor, _FoamColor, _HorizonColor, _ShadowColor;
                 float  _WaveSpeed, _WaveScale;
-                float  _WaveFreq1, _WaveFreq2, _WaveFreq3;
-                float  _WaveHeight;
+                float  _WaveFreq1, _WaveFreq2, _WaveFreq3, _WaveHeight;
                 float4 _WaveDir1, _WaveDir2, _WaveDir3;
                 float  _FoamScale, _FoamThreshold, _FoamSoft, _FoamSpeed;
                 float  _Steps, _SoftEdge, _FresnelPower, _RimStrength;
                 float  _SpecPower, _SpecStrength;
             CBUFFER_END
 
-            float Wave(float3 pos, float2 dir, float freq, float speed, float t)
-            {
-                return sin(dot(dir, pos.xz) * freq - t * speed * freq);
-            }
-            float WaveDx(float3 pos, float2 dir, float freq, float speed, float t)
-            {
-                return cos(dot(dir, pos.xz) * freq - t * speed * freq) * freq * dir.x;
-            }
-            float WaveDz(float3 pos, float2 dir, float freq, float speed, float t)
-            {
-                return cos(dot(dir, pos.xz) * freq - t * speed * freq) * freq * dir.y;
-            }
+            // --- Utility ---
+            float Wave(float3 p, float2 d, float f, float s, float t)
+            { return sin(dot(d, p.xz) * f - t * s * f); }
+
+            float WaveDx(float3 p, float2 d, float f, float s, float t)
+            { return cos(dot(d, p.xz) * f - t * s * f) * f * d.x; }
+
+            float WaveDz(float3 p, float2 d, float f, float s, float t)
+            { return cos(dot(d, p.xz) * f - t * s * f) * f * d.y; }
 
             float hash2(float2 p) {
                 float3 p3 = frac(float3(p.xyx) * 0.13);
@@ -137,15 +116,13 @@ Shader "Custom/ToonWater"
                 Varyings OUT;
                 float3 posWS = TransformObjectToWorld(IN.posOS.xyz);
                 float t = _Time.y * _WaveSpeed;
-
                 float2 d1 = normalize(_WaveDir1.xz);
                 float2 d2 = normalize(_WaveDir2.xz);
                 float2 d3 = normalize(_WaveDir3.xz);
 
-                float h = Wave(posWS, d1, _WaveFreq1, _WaveSpeed*4, t) * _WaveHeight
-                        + Wave(posWS, d2, _WaveFreq2, _WaveSpeed*2.5, t) * _WaveHeight * 0.5
-                        + Wave(posWS, d3, _WaveFreq3, _WaveSpeed*1.2, t) * _WaveHeight * 0.2;
-
+                float h = Wave(posWS,d1,_WaveFreq1,_WaveSpeed*4,t) * _WaveHeight
+                        + Wave(posWS,d2,_WaveFreq2,_WaveSpeed*2.5,t) * _WaveHeight * 0.5
+                        + Wave(posWS,d3,_WaveFreq3,_WaveSpeed*1.2,t) * _WaveHeight * 0.2;
                 posWS.y += h * _WaveScale;
 
                 float dx = WaveDx(posWS,d1,_WaveFreq1,_WaveSpeed*4,t)*_WaveHeight*_WaveScale
@@ -160,7 +137,6 @@ Shader "Custom/ToonWater"
                 OUT.posCS = TransformWorldToHClip(posWS);
                 OUT.fogCoord = ComputeFogFactor(OUT.posCS.z);
                 OUT.waveH = h;
-                OUT.screenPos = OUT.posCS; // pass clip-space pos, compute UV in frag
                 return OUT;
             }
 
@@ -171,44 +147,27 @@ Shader "Custom/ToonWater"
                 float3 V = normalize(GetWorldSpaceViewDir(IN.posWS));
                 float3 L = mainLight.direction;
 
-                // ── DEPTH-BASED COLOR ──
-                // Sample depth texture to get terrain depth below water
-                // Compute screen UV from clip-space position
-                float2 screenUV = (IN.screenPos.xy / IN.screenPos.w) * 0.5 + 0.5;
-                #if UNITY_UV_STARTS_AT_TOP
-                screenUV.y = 1.0 - screenUV.y;
-                #endif
-                float depthDiff = _DeepDepth; // default: deep water
-
-                #if defined(_MAIN_LIGHT_SHADOWS) || 1
-                // Try to sample scene depth
-                float sceneDepthRaw = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, screenUV).r;
-                float sceneDepthLinear = LinearEyeDepth(sceneDepthRaw, _ZBufferParams);
-                float waterSurfaceDepth = IN.posCS.w; // linear depth of water surface
-                depthDiff = max(0, sceneDepthLinear - waterSurfaceDepth);
-                // Sanity check: if depth texture returns garbage, use wave-based fallback
-                if (depthDiff > 500.0 || depthDiff < 0) depthDiff = _DeepDepth * 0.6;
-                #endif
-
-                // Clamp and normalize depth
-                float shallowFactor = saturate(depthDiff / _ShallowDepth);
-                float deepFactor = saturate(depthDiff / _DeepDepth);
-                float shoreFactor = 1.0 - saturate(depthDiff / _ShoreWidth);
-
-                // Soft-stepped diffuse
-                float NdotL = dot(N, L);
-                float halfLambert = NdotL * 0.5 + 0.5;
+                // Toon lighting
+                float halfLambert = dot(N, L) * 0.5 + 0.5;
                 float toon = SoftStep(halfLambert, _Steps, _SoftEdge);
 
-                // Fresnel
+                // Fresnel (view-dependent depth illusion)
                 float fresnel = pow(1.0 - saturate(dot(V, N)), _FresnelPower);
 
-                // Base color: blend shallow -> deep based on REAL depth
-                float3 baseColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, deepFactor);
-                // Horizon tint at distance via fresnel
+                // Depth illusion from noise + wave height
+                // Gives spatial variation: some areas look shallow, some deep
+                float t = _Time.y * 0.05;
+                float spatialNoise = vnoise(IN.posWS.xz * 0.003 + float2(t, t*0.7));
+                float depthFactor = saturate(spatialNoise * 0.6 + fresnel * 0.4);
+                // Wave crests = shallow, troughs = deep
+                depthFactor = saturate(depthFactor - IN.waveH * 0.15);
+
+                // Base color: shallow -> deep
+                float3 baseColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, depthFactor);
+                // Horizon blend
                 baseColor = lerp(baseColor, _HorizonColor.rgb, fresnel * 0.6);
 
-                // Apply lighting with colored shadows
+                // Lit with colored shadows
                 float3 litColor = lerp(_ShadowColor.rgb * baseColor, baseColor, toon);
 
                 // Specular
@@ -217,22 +176,19 @@ Shader "Custom/ToonWater"
                 float toonSpec = SoftStep(spec, 2, 0.15);
                 litColor += mainLight.color.rgb * toonSpec * _SpecStrength;
 
-                // Rim highlight
+                // Rim
                 litColor += _HorizonColor.rgb * fresnel * _RimStrength;
 
-                // Foam: stronger at shore + wave crests
-                float t = _Time.y * _FoamSpeed;
+                // Foam (wave crests + noise)
+                float ft = _Time.y * _FoamSpeed;
                 float2 fuv = IN.posWS.xz * _FoamScale * 0.01;
-                float foam = vnoise(fuv + float2(t, t*0.7))
-                           + vnoise(fuv * 2.3 - float2(t*0.5, t*0.3)) * 0.5;
+                float foam = vnoise(fuv + float2(ft, ft*0.7))
+                           + vnoise(fuv * 2.3 - float2(ft*0.5, ft*0.3)) * 0.5;
                 foam /= 1.5;
-
                 float crestFactor = saturate(IN.waveH * 0.5 + 0.3);
-                // Shore foam (where water meets land)
-                float shoreFoam = shoreFactor * 0.7;
-                float totalFoamDrive = max(crestFactor, shoreFoam);
-                float foamMask = smoothstep(_FoamThreshold - _FoamSoft, _FoamThreshold + _FoamSoft, foam * totalFoamDrive);
-                litColor = lerp(litColor, _FoamColor.rgb * (toon * 0.3 + 0.7), foamMask * 0.6);
+                float foamMask = smoothstep(_FoamThreshold - _FoamSoft,
+                                            _FoamThreshold + _FoamSoft, foam * crestFactor);
+                litColor = lerp(litColor, _FoamColor.rgb * (toon * 0.3 + 0.7), foamMask * 0.5);
 
                 litColor = MixFog(litColor, IN.fogCoord);
                 return half4(litColor, 1);

@@ -115,11 +115,27 @@ namespace CityBuilder
 
             if (useAutoCrop && cropMaxX > cropMinX && cropMaxY > cropMinY)
             {
-                int margin = Mathf.Max(50, res / 80); // margine proporzionale alla risoluzione
-                cropMinX = Mathf.Clamp(cropMinX - margin, 0, res - 1);
-                cropMaxX = Mathf.Clamp(cropMaxX + margin, 0, res - 1);
-                cropMinY = Mathf.Clamp(cropMinY - margin, 0, res - 1);
-                cropMaxY = Mathf.Clamp(cropMaxY + margin, 0, res - 1);
+                // Calcola quanta area è mare
+                int totalPixels = res * res;
+                int seaPixels = totalPixels - ((cropMaxX - cropMinX) * (cropMaxY - cropMinY));
+                float seaPct = (float)seaPixels / totalPixels;
+
+                // Se il mare copre più del 30%, è una zona costiera:
+                // NON croppare, il mare è parte della scena
+                if (seaPct > 0.30f)
+                {
+                    UnityEngine.Debug.Log($"AutoCrop: {seaPct*100:F0}% mare — zona costiera, crop disabilitato");
+                    cropMinX = 0; cropMaxX = res - 1;
+                    cropMinY = 0; cropMaxY = res - 1;
+                }
+                else
+                {
+                    int margin = Mathf.Max(50, res / 80);
+                    cropMinX = Mathf.Clamp(cropMinX - margin, 0, res - 1);
+                    cropMaxX = Mathf.Clamp(cropMaxX + margin, 0, res - 1);
+                    cropMinY = Mathf.Clamp(cropMinY - margin, 0, res - 1);
+                    cropMaxY = Mathf.Clamp(cropMaxY + margin, 0, res - 1);
+                }
             }
             else
             {
