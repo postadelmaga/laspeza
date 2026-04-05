@@ -473,10 +473,12 @@ def main():
     # ── Step 4: Risoluzione target ──
     VALID_RES = [33, 65, 129, 257, 513, 1025, 2049, 4097]
     max_side = max(src_w, src_h)
+    # Usa sempre la risoluzione massima richiesta per massimo dettaglio
     target_res = args.max_res
+    # Arrotonda alla risoluzione valida più vicina
     for r in VALID_RES:
-        if r >= max_side:
-            target_res = min(r, args.max_res)
+        if r >= target_res:
+            target_res = r
             break
 
     print(f"  Target: {src_w}x{src_h} -> {target_res}x{target_res}")

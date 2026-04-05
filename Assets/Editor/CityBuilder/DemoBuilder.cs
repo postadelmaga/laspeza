@@ -28,20 +28,41 @@ namespace CityBuilder
             // Ottimizza terrain per build size
             OptimizeTerrainsForBuild();
 
-            // Cerca o crea la camera principale
+            // Usa la camera esistente (creata da SceneSetup), o creane una
             Camera mainCam = Camera.main;
             if (mainCam == null)
             {
-                var camGo = new GameObject("DemoCamera");
-                mainCam = camGo.AddComponent<Camera>();
-                camGo.AddComponent<AudioListener>();
-                camGo.tag = "MainCamera";
+                // Cerca qualsiasi camera nella scena prima di crearne una nuova
+                mainCam = Object.FindAnyObjectByType<Camera>();
+                if (mainCam != null)
+                {
+                    mainCam.tag = "MainCamera";
+                }
+                else
+                {
+                    var camGo = new GameObject("DemoCamera");
+                    mainCam = camGo.AddComponent<Camera>();
+                    camGo.AddComponent<AudioListener>();
+                    camGo.tag = "MainCamera";
+                }
             }
 
             // Rimuovi vecchi controller se presenti
             RemoveComponent(mainCam.gameObject, "CityExplorer");
             RemoveComponent(mainCam.gameObject, "AtmosphereController");
             RemoveComponent(mainCam.gameObject, "BotWStyleManager");
+
+            // Rimuovi duplicati di BotWAtmosphere/ToonTreePlacer da altri GameObject
+            foreach (var obj in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            {
+                if (obj.gameObject == mainCam.gameObject) continue;
+                string tn = obj.GetType().Name;
+                if (tn == "BotWAtmosphere" || tn == "ToonTreePlacer" || tn == "DemoManager")
+                {
+                    Debug.Log($"Demo: rimosso {tn} duplicato da {obj.gameObject.name}");
+                    Undo.DestroyObjectImmediate(obj);
+                }
+            }
 
             // Aggiungi i componenti demo
             AddComponentIfMissing(mainCam.gameObject, "DemoManager");
@@ -180,14 +201,14 @@ namespace CityBuilder
                 TerrainData td = terrain.terrainData;
                 if (td == null) continue;
 
-                // 513 è sufficiente per 5km tile (~10m/pixel)
-                if (td.heightmapResolution > 513)
+                // 1025 per buon dettaglio territorio e fondale
+                if (td.heightmapResolution > 1025)
                 {
                     int oldRes = td.heightmapResolution;
                     float[,] oldHeights = td.GetHeights(0, 0, oldRes, oldRes);
 
-                    td.heightmapResolution = 513;
-                    int newRes = 513;
+                    td.heightmapResolution = 1025;
+                    int newRes = 1025;
 
                     // Ricampiona con interpolazione bilineare
                     float[,] newHeights = new float[newRes, newRes];

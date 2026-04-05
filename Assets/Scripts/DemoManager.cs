@@ -95,10 +95,12 @@ public class DemoManager : MonoBehaviour
         StartFlythrough();
         LockCursor(true);
 
-        // Aggiungi componenti se mancanti
-        if (GetComponent<BotWAtmosphere>() == null)
+        // Aggiungi componenti se mancanti (evita duplicati)
+        if (GetComponent<BotWAtmosphere>() == null &&
+            FindAnyObjectByType<BotWAtmosphere>() == null)
             gameObject.AddComponent<BotWAtmosphere>();
-        if (GetComponent<ToonTreePlacer>() == null)
+        if (GetComponent<ToonTreePlacer>() == null &&
+            FindAnyObjectByType<ToonTreePlacer>() == null)
             gameObject.AddComponent<ToonTreePlacer>();
 
         // Setup camera

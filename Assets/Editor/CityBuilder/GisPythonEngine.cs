@@ -176,6 +176,9 @@ MAX_RES = int(os.environ.get('CITYBUILDER_MAX_RES', '4097'))
 
 def choose_res(w, h):
     max_side = max(w, h)
+    # Forza almeno 4097 per dettaglio fondale e territorio
+    if MAX_RES >= 4097:
+        return 4097
     for r in VALID_RES:
         if r >= max_side:
             return min(r, MAX_RES)
