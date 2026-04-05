@@ -105,6 +105,9 @@ public class BotWAtmosphere : MonoBehaviour
 
     void Start()
     {
+        // Disabilita sistemi atmosfera legacy per evitare conflitti
+        DisableLegacyAtmosphereSystems();
+
         FindWorldBounds();
         SetupSun();
         SetupMoon();
@@ -115,6 +118,22 @@ public class BotWAtmosphere : MonoBehaviour
         SetupPostProcessing();
         initialized = true;
         ApplyTimeOfDay();
+    }
+
+    void DisableLegacyAtmosphereSystems()
+    {
+        // AtmosphereController e BotWStyleManager sono legacy — li disabilitiamo
+        // se presenti sulla stessa scena per evitare che sovrascrivano
+        // sun, fog, ambient e skybox ogni frame.
+        foreach (var ac in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+        {
+            string typeName = ac.GetType().Name;
+            if (ac != this && (typeName == "AtmosphereController" || typeName == "BotWStyleManager"))
+            {
+                Debug.Log($"BotWAtmosphere: disabilitato {typeName} (conflitto atmosfera)");
+                ac.enabled = false;
+            }
+        }
     }
 
     void FindWorldBounds()

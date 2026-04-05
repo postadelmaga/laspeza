@@ -321,12 +321,13 @@ public class WaterSurface : MonoBehaviour
         bool doCull = cam != null;
 
         int count = _baseVertices.Length;
+        Matrix4x4 l2w = transform.localToWorldMatrix;
         for (int i = 0; i < count; i++)
         {
             Vector3 baseLocal = _baseVertices[i];
 
             // Convert to world XZ for distance check and wave calc
-            Vector3 worldPos = transform.TransformPoint(baseLocal);
+            Vector3 worldPos = l2w.MultiplyPoint3x4(baseLocal);
 
             if (doCull)
             {
