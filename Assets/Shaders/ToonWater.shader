@@ -44,8 +44,8 @@ Shader "Custom/ToonWater"
 
     SubShader
     {
-        // Queue Transparent-1 so depth texture has the terrain in it
-        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" "Queue"="Transparent-1" }
+        // Opaque, rendered right after terrain geometry
+        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" "Queue"="Geometry+10" }
         LOD 200
 
         Pass
@@ -62,7 +62,9 @@ Shader "Custom/ToonWater"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+            // Depth texture per profondita' acqua
+            TEXTURE2D_X_FLOAT(_CameraDepthTexture);
+            SAMPLER(sampler_CameraDepthTexture);
 
             struct Attributes
             {
@@ -158,7 +160,7 @@ Shader "Custom/ToonWater"
                 OUT.posCS = TransformWorldToHClip(posWS);
                 OUT.fogCoord = ComputeFogFactor(OUT.posCS.z);
                 OUT.waveH = h;
-                OUT.screenPos = ComputeScreenPos(OUT.posCS);
+                OUT.screenPos = OUT.posCS; // pass clip-space pos, compute UV in frag
                 return OUT;
             }
 
@@ -171,16 +173,27 @@ Shader "Custom/ToonWater"
 
                 // ── DEPTH-BASED COLOR ──
                 // Sample depth texture to get terrain depth below water
-                float2 screenUV = IN.screenPos.xy / IN.screenPos.w;
-                float sceneDepthRaw = SampleSceneDepth(screenUV);
+                // Compute screen UV from clip-space position
+                float2 screenUV = (IN.screenPos.xy / IN.screenPos.w) * 0.5 + 0.5;
+                #if UNITY_UV_STARTS_AT_TOP
+                screenUV.y = 1.0 - screenUV.y;
+                #endif
+                float depthDiff = _DeepDepth; // default: deep water
+
+                #if defined(_MAIN_LIGHT_SHADOWS) || 1
+                // Try to sample scene depth
+                float sceneDepthRaw = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, screenUV).r;
                 float sceneDepthLinear = LinearEyeDepth(sceneDepthRaw, _ZBufferParams);
-                float waterDepthLinear = LinearEyeDepth(IN.posCS.z / IN.posCS.w, _ZBufferParams);
-                float depthDiff = sceneDepthLinear - waterDepthLinear; // meters below water surface
+                float waterSurfaceDepth = IN.posCS.w; // linear depth of water surface
+                depthDiff = max(0, sceneDepthLinear - waterSurfaceDepth);
+                // Sanity check: if depth texture returns garbage, use wave-based fallback
+                if (depthDiff > 500.0 || depthDiff < 0) depthDiff = _DeepDepth * 0.6;
+                #endif
 
                 // Clamp and normalize depth
-                float shallowFactor = saturate(depthDiff / _ShallowDepth);  // 0=surface, 1=shallow limit
-                float deepFactor = saturate(depthDiff / _DeepDepth);        // 0=surface, 1=deep limit
-                float shoreFactor = 1.0 - saturate(depthDiff / _ShoreWidth); // 1=shore, 0=open water
+                float shallowFactor = saturate(depthDiff / _ShallowDepth);
+                float deepFactor = saturate(depthDiff / _DeepDepth);
+                float shoreFactor = 1.0 - saturate(depthDiff / _ShoreWidth);
 
                 // Soft-stepped diffuse
                 float NdotL = dot(N, L);
@@ -224,23 +237,6 @@ Shader "Custom/ToonWater"
                 litColor = MixFog(litColor, IN.fogCoord);
                 return half4(litColor, 1);
             }
-            ENDHLSL
-        }
-
-        // Depth-only pass so water writes to depth buffer for other effects
-        Pass
-        {
-            Name "DepthOnly"
-            Tags { "LightMode" = "DepthOnly" }
-            ZWrite On ColorMask R
-            HLSLPROGRAM
-            #pragma vertex DV
-            #pragma fragment DF
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            struct A { float4 p : POSITION; };
-            struct V2 { float4 p : SV_POSITION; };
-            V2 DV(A i) { V2 o; o.p = TransformObjectToHClip(i.p.xyz); return o; }
-            half4 DF(V2 i) : SV_Target { return 0; }
             ENDHLSL
         }
 
