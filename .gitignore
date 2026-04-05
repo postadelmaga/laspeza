@@ -7,7 +7,8 @@
 [Ll]ogs/
 [Uu]serSettings/
 
-# Scene backup (possono essere enormi)
+# Scene (generate dalla pipeline, troppo grandi per git)
+Assets/Scenes/
 *.unity.bak
 *.unity.bak.meta
 
