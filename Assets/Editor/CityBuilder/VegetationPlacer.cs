@@ -523,10 +523,9 @@ namespace CityBuilder
             var tileKey = (gx, gz);
 
             if (!trunkTiles.ContainsKey(tileKey))
-            {
                 trunkTiles[tileKey] = new TileMeshData();
+            if (!crownTiles.ContainsKey(tileKey))
                 crownTiles[tileKey] = new TileMeshData();
-            }
 
             // Variazione casuale +/- 20%
             float scale = 0.8f + (float)rng.NextDouble() * 0.4f;
