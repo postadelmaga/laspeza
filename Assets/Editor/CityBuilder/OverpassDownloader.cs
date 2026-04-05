@@ -312,7 +312,7 @@ namespace CityBuilder
         /// The response contains an "elements" array of nodes, ways, and relations.
         /// We first index all nodes by ID, then resolve way geometries.
         /// </summary>
-        private static OsmDownloadResult ParseJson(string json)
+        public static OsmDownloadResult ParseJson(string json)
         {
             var result = new OsmDownloadResult();
 

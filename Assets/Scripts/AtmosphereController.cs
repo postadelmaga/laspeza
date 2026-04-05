@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 /// <summary>
@@ -418,7 +419,8 @@ public class AtmosphereController : MonoBehaviour
         if (!initialized) return;
 
         // Toggle notte
-        if (Input.GetKeyDown(KeyCode.N))
+        var kb = Keyboard.current;
+        if (kb != null && kb.nKey.wasPressedThisFrame)
         {
             nightMode = !nightMode;
             timeOfDay = nightMode ? 0f : 0.35f;
@@ -426,7 +428,7 @@ public class AtmosphereController : MonoBehaviour
         }
 
         // Toggle time-lapse
-        if (Input.GetKeyDown(KeyCode.L))
+        if (kb != null && kb.lKey.wasPressedThisFrame)
         {
             timeLapse = !timeLapse;
             Debug.Log("Atmosfera: time-lapse " + (timeLapse ? "ON" : "OFF"));

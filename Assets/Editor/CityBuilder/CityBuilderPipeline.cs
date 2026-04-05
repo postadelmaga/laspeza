@@ -151,11 +151,27 @@ namespace CityBuilder
                     };
                 }
 
-                // OSM cache
+                // OSM cache: carica osmData se disponibile
                 if (System.IO.File.Exists(osmCachePath))
                 {
-                    hasOsm = true;
-                    Debug.Log("RestoreFromScene: cache OSM trovata");
+                    try
+                    {
+                        string osmJson = System.IO.File.ReadAllText(osmCachePath);
+                        osmData = OverpassDownloader.ParseJson(osmJson);
+                        if (osmData != null && tMeta != null)
+                        {
+                            osmData.minLon = tMeta.minLon;
+                            osmData.minLat = tMeta.minLat;
+                            osmData.maxLon = tMeta.maxLon;
+                            osmData.maxLat = tMeta.maxLat;
+                        }
+                        hasOsm = true;
+                        Debug.Log($"RestoreFromScene: osmData caricato dalla cache ({osmCachePath})");
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogWarning($"RestoreFromScene: errore caricamento cache OSM: {e.Message}");
+                    }
                 }
             }
 
