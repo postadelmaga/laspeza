@@ -113,11 +113,47 @@ namespace CityBuilder
             }
             rowBuffer = null;
 
+            // Smoothing pass: attenua i picchi per un look più morbido (stile BotW)
+            // Applica un box blur 3x3 solo ai pixel sopra il livello del mare
+            // per non sfumare la linea costiera
+            EditorUtility.DisplayProgressBar("CityBuilder", "Smoothing terreno...", 0.45f);
+            {
+                float[,] smoothed = new float[res, res];
+                for (int y = 0; y < res; y++)
+                {
+                    for (int x = 0; x < res; x++)
+                    {
+                        if (heights[y, x] <= baselineThreshold)
+                        {
+                            smoothed[y, x] = heights[y, x];
+                            continue;
+                        }
+                        float sum = 0; int count = 0;
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int ny = Mathf.Clamp(y + dy, 0, res - 1);
+                                int nx = Mathf.Clamp(x + dx, 0, res - 1);
+                                sum += heights[ny, nx];
+                                count++;
+                            }
+                        }
+                        smoothed[y, x] = sum / count;
+                    }
+                }
+                heights = smoothed;
+            }
+
             if (useAutoCrop && cropMaxX > cropMinX && cropMaxY > cropMinY)
             {
-                // Calcola quanta area è mare
+                // Conta i pixel effettivamente sotto il livello del mare
                 int totalPixels = res * res;
-                int seaPixels = totalPixels - ((cropMaxX - cropMinX) * (cropMaxY - cropMinY));
+                int seaPixels = 0;
+                for (int y = 0; y < res; y++)
+                    for (int x = 0; x < res; x++)
+                        if (heights[y, x] <= baselineThreshold)
+                            seaPixels++;
                 float seaPct = (float)seaPixels / totalPixels;
 
                 // Se il mare copre più del 30%, è una zona costiera:
