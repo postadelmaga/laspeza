@@ -5,7 +5,8 @@
 # Rigenera la scena solo se necessario, poi builda.
 #
 # Uso:
-#   ./build_demo.sh                   # build (rigenera se serve)
+#   ./build_demo.sh                   # demo: terreno+acqua, poi build
+#   ./build_demo.sh --full            # TUTTO: edifici+strade+vegetazione, poi build
 #   ./build_demo.sh --force           # forza rigenerazione scena
 #   ./build_demo.sh --build-only      # solo build, no rigenerazione
 #   ./build_demo.sh --gen-only        # solo genera scena, no build
@@ -40,6 +41,7 @@ FORCE=false
 BUILD_ONLY=false
 GEN_ONLY=false
 RUN_AFTER=false
+FULL=false
 TIF="$DEFAULT_TIF"
 GRID=2
 
@@ -50,6 +52,7 @@ while [[ $# -gt 0 ]]; do
         --build-only) BUILD_ONLY=true ;;
         --gen-only)   GEN_ONLY=true ;;
         --run)        RUN_AFTER=true ;;
+        --full)       FULL=true ;;
         --tif)        TIF="$2"; shift ;;
         --grid)       GRID="$2"; shift ;;
         *)            echo "Opzione sconosciuta: $1"; exit 1 ;;
@@ -144,8 +147,14 @@ RAW="$PROJECT_PATH/DATA/processed_terrain.raw"
 META="$PROJECT_PATH/DATA/terrain_meta_saved.json"
 if [ ! -f "$RAW" ] || [ ! -f "$META" ] || [ "$TIF" -nt "$RAW" ]; then
     echo "▸ Pre-processing terreno (Python)..."
-    python3 "$PROJECT_PATH/prepare_terrain.py" "$TIF" --max-res 1025 --skip-bathy --sea-depth -10
+    python3 "$PROJECT_PATH/prepare_terrain.py" "$TIF"
     echo ""
+    # Enhancement opzionale
+    if [ -f "$PROJECT_PATH/enhance_terrain.py" ]; then
+        echo "▸ Enhancement terreno..."
+        python3 "$PROJECT_PATH/enhance_terrain.py" --data-dir "$PROJECT_PATH/DATA" --erosion-iters 3000
+        echo ""
+    fi
 fi
 
 # ── Step 2: Genera scena (Unity, se serve) ──
@@ -159,7 +168,7 @@ if ! $BUILD_ONLY; then
             -projectPath "$PROJECT_PATH" \
             -executeMethod CityBuilder.CityBuilderCLI.Generate \
             -logFile "$GEN_LOG" \
-            -- --tif "$TIF" --grid "$GRID" --step demo --save &
+            -- --tif "$TIF" --grid "$GRID" $($FULL || echo "--step demo") --save &
 
         monitor_unity "$GEN_LOG" "Generazione"
 
@@ -186,13 +195,20 @@ fi
 
 # ── Step 3: Build (Unity) ──
 echo ""
-echo "▸ Build demo Linux..."
+# Scegli build method per OS
+case "$(uname -s)" in
+    Darwin*) BUILD_METHOD="CityBuilder.DemoBuilder.BuildMacCLI" ;;
+    MINGW*|MSYS*|CYGWIN*) BUILD_METHOD="CityBuilder.DemoBuilder.BuildWindowsCLI" ;;
+    *) BUILD_METHOD="CityBuilder.DemoBuilder.BuildLinuxCLI" ;;
+esac
+
+echo "▸ Build ($BUILD_METHOD)..."
 BUILD_LOG="$LOG_DIR/demo_build_$(date +%H%M%S).log"
 
 "$UNITY_PATH" \
     -batchmode -nographics -disable-gpu-skinning \
     -projectPath "$PROJECT_PATH" \
-    -executeMethod CityBuilder.DemoBuilder.BuildLinuxCLI \
+    -executeMethod "$BUILD_METHOD" \
     -logFile "$BUILD_LOG" \
     -quit &
 

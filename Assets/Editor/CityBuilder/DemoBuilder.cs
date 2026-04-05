@@ -73,6 +73,13 @@ namespace CityBuilder
             Build(BuildTarget.StandaloneWindows64, "Build/LaSpeziaDemo_Win/LaSpeziaDemo.exe");
         }
 
+        [MenuItem("CityBuilder/4. Build Demo (macOS)")]
+        public static void BuildMac()
+        {
+            PrepareDemoScene();
+            Build(BuildTarget.StandaloneOSX, "Build/LaSpeziaDemo_Mac/LaSpeziaDemo.app");
+        }
+
         public static void Build(BuildTarget target, string path)
         {
             string fullPath = Path.Combine(
@@ -106,6 +113,7 @@ namespace CityBuilder
         // CLI entry points
         public static void BuildLinuxCLI() => BuildLinux();
         public static void BuildWindowsCLI() => BuildWindows();
+        public static void BuildMacCLI() => BuildMac();
 
         // ================================================================
         //  OTTIMIZZAZIONE TERRAIN PER BUILD
