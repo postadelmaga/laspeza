@@ -1,0 +1,60 @@
+# ── Unity ──
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+
+# Scene backup (possono essere enormi)
+*.unity.bak
+*.unity.bak.meta
+
+# ── IDE ──
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ── Mono ──
+mono_crash.*.blob
+
+# ── Build artifacts ──
+*.apk
+*.aab
+*.unitypackage
+
+# ── Python ──
+__pycache__/
+*.pyc
+
+# ── DATA: file grandi (scaricabili/rigenerabili) ──
+# I GeoTIFF sorgente vanno scaricati a parte, vedi README
+DATA/*.tif
+DATA/*.raw
+DATA/*.raw.bak
+DATA/*.aux.xml
+DATA/*_merged_bathymetry.tif
+DATA/satellite_cache/
+
+# ── Utility di sistema (non del progetto) ──
+zram-monitor.sh
+
+# ── Claude / agent ──
+.claude/
